@@ -307,9 +307,10 @@ game.step = function step(inputState, dt) {
   shotFx.update(dt);
 };
 
-/** One rendered frame: camera, scene, HUD. */
-game.renderFrame = function renderFrame() {
-  updateCamera(render.camera, game, input, 1 / 60);
+/** One rendered frame: camera, scene, HUD. `snap` jumps the camera to its
+ * chase position at once (used by the shot mode, which paints twice). */
+game.renderFrame = function renderFrame(snap) {
+  updateCamera(render.camera, game, input, 1 / 60, snap);
   hud.update(game, 1 / 60);
   render.renderer.render(render.scene, render.camera);
 };
@@ -335,13 +336,16 @@ function handleMetaKeys() {
   }
 }
 
-// Shot mode: stage the scene, paint it twice, flag readiness.
+// Shot mode: hide every menu overlay and the toast (they are DOM, not the
+// game), stage the scene, paint it twice, flag readiness.
 if (shotName) {
+  hideScreens();
+  document.getElementById('toast').style.display = 'none';
   const scene = stageShot(shotName, game);
   game.screen = 'play';
   let painted = 0;
   function paintShot() {
-    game.renderFrame();
+    game.renderFrame(true);
     painted += 1;
     if (painted < 2) requestAnimationFrame(paintShot);
     else window.__shotReady = true;
