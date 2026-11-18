@@ -232,22 +232,23 @@ export function createHUD() {
  * Chase camera: behind the player on foot, further back and higher in a
  * car, smoothed so it never snaps. Mouse drag orbits around the player.
  */
-export function updateCamera(camera, state, input, dt) {
+export function updateCamera(camera, state, input, dt, snap) {
   const p = state.player;
   const delta = input.takeMouseDelta();
   state.cameraYaw -= delta.x * 0.004;
   state.cameraPitch = Math.max(-0.15, Math.min(0.55, state.cameraPitch + delta.y * 0.003));
-  if (p.car) state.cameraYaw = THREE.MathUtils.lerp(state.cameraYaw, p.car.yaw + Math.PI, Math.min(1, dt * 1.2));
+  if (p.car && !snap) state.cameraYaw = THREE.MathUtils.lerp(state.cameraYaw, p.car.yaw + Math.PI, Math.min(1, dt * 1.2));
   const inCar = !!p.car;
-  const dist = inCar ? CFG.CAMERA_DISTANCE_CAR : CFG.CAMERA_DISTANCE;
-  const height = inCar ? CFG.CAMERA_HEIGHT_CAR : CFG.CAMERA_HEIGHT;
+  const dist = state.camDist || (inCar ? CFG.CAMERA_DISTANCE_CAR : CFG.CAMERA_DISTANCE);
+  const height = state.camHeight || (inCar ? CFG.CAMERA_HEIGHT_CAR : CFG.CAMERA_HEIGHT);
   const cx = p.x - Math.sin(state.cameraYaw) * Math.cos(state.cameraPitch) * dist;
   const cz = p.z - Math.cos(state.cameraYaw) * Math.cos(state.cameraPitch) * dist;
   const cy = height + Math.sin(state.cameraPitch) * dist * 0.6;
+  const f = snap ? 1 : Math.min(1, dt * 8);
   camera.position.set(
-    THREE.MathUtils.lerp(camera.position.x, cx, Math.min(1, dt * 8)),
-    THREE.MathUtils.lerp(camera.position.y, cy, Math.min(1, dt * 8)),
-    THREE.MathUtils.lerp(camera.position.z, cz, Math.min(1, dt * 8)),
+    THREE.MathUtils.lerp(camera.position.x, cx, f),
+    THREE.MathUtils.lerp(camera.position.y, cy, f),
+    THREE.MathUtils.lerp(camera.position.z, cz, f),
   );
   const lookY = inCar ? 1.6 : 1.5;
   camera.lookAt(p.x, lookY, p.z);
